@@ -1,4 +1,4 @@
-VIRTUALENV = "virtualenv --python /usr/bin/python3"
+VIRTUALENV = virtualenv --python /usr/bin/python3
 SPHINX_BUILDDIR = docs/_build
 VENV := $(shell echo $${VIRTUAL_ENV-.venv})
 PYTHON = $(VENV)/bin/python
