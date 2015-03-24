@@ -50,7 +50,7 @@ class ClientRouter(Router):
                 self.config['fxa-oauth.scope'],
                 self.cache)
         except NotAuthenticatedError as e:
-            yield from self.error('NotAuthenticatedError: %s' %e)
+            yield from self.error('NotAuthenticatedError: %s' % e)
             return
 
         # 2. Build worker_id
@@ -86,7 +86,8 @@ class ClientRouter(Router):
         reply_body = json.loads(reply)
 
         if reply_body['messageType'] != "worker-created":
-            yield from self.error('Something went wrong: %s' % reply_body.get('reason'))
+            yield from self.error('Something went wrong: %s' %
+                                  reply_body.get('reason'))
             return
 
         answer = json.dumps({
