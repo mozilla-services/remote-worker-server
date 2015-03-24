@@ -4,7 +4,8 @@ def build_message(message_type, status, reason, worker_id=None, **kwargs):
         "workerId": worker_id,
         "status": "terminated",
         "reason": reason
-    }.update(kwargs)
+    }
+    result.update(kwargs)
     return result
 
 

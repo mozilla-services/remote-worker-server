@@ -11,7 +11,7 @@ from remote_server.cache import redis
 
 CONFIG = {
     'remote_server.cache_url': 'redis://localhost:6379',
-    'fxa-oauth.server_url': 'https://oauth-stable.dev.lcip.org',
+    'fxa-oauth.server_url': 'https://oauth.accounts.firefox.com',
     'fxa-oauth.scope': 'remote_server'
 }
 
@@ -25,9 +25,10 @@ def handler(websocket, path):
             router = WorkerRouter(websocket, cache, CONFIG)
         else:
             router = ClientRouter(websocket, cache, CONFIG)
-        router.dispatch()
-    except Exception:
-        error_message = error('Wrong json received: %s' % standza)
+        yield from router.dispatch()
+    except Exception as e:
+        raise
+        error_message = error('Something went Wrong: %s' % e)
         yield from websocket.send(json.dumps(error_message))
         yield from websocket.close()
         return
