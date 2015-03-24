@@ -9,7 +9,8 @@ with open(os.path.join(here, 'README.rst')) as f:
 REQUIREMENTS = [
     'aiohttp',
     'aioredis',
-    'websockets'
+    'websockets',
+    'six'
 ]
 
 ENTRY_POINTS = {
