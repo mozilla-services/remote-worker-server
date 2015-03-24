@@ -17,7 +17,7 @@ API
 ===
 
 * `API Design proposal
-  <https://github.com/mozilla-services/remote-worker-server/wiki/API-Design-proposal>`_
+  <https://github.com/mozilla-services/remote-worker-server/wiki/WebRTC-API-Design-Proposal>`_
 * `Online documentation <http://remote-worker-server.readthedocs.org/en/latest/>`_
 
 
@@ -28,11 +28,30 @@ By default, remote-worker-server persists its records inside a `Redis
 <http://redis.io/>`_  database, so it has to be installed first (see the
 "Install Redis" section below for more on this).
 
-Once Redis is installed:
+You will also need to have a Python 3.4 running.
+
+
+The server
+----------
 
 ::
 
     make serve
+
+
+Add a fake worker
+-----------------
+
+::
+
+    make mock_worker
+
+Connect a fake client
+---------------------
+
+::
+
+    make mock_client
 
 
 Install Redis

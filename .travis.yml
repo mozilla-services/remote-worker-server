@@ -1,0 +1,11 @@
+language: python
+python: 3.4
+sudo: false
+services: redis-server
+env:
+    - TOX_ENV=py34
+    - TOX_ENV=flake8
+install:
+    - if [[ $ACTION != loadtest ]]; then pip install tox; fi
+script:
+    - if [[ $ACTION != loadtest ]]; then tox -e $TOX_ENV; fi
