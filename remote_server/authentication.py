@@ -91,7 +91,7 @@ def authenticate(authorization, server_url, oauth_scope, cache=None):
                                           cache=cache,
                                           token=auth,
                                           scope=oauth_scope)
-        user_id = profile['user'].encode('utf-8')
+        user_id = profile['user']
     except exceptions.BackendError as e:
         raise exceptions.NotAuthenticatedError(e)
 

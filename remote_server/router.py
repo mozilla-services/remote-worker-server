@@ -6,6 +6,8 @@ from remote_server.authentication import authenticate
 from remote_server.error import error
 from remote_server.exceptions import NotAuthenticatedError, BackendError
 
+CLIENT_TIMEOUT_SECONDS = 30
+
 
 class Router(object):
     def __init__(self, websocket, cache, config):
@@ -16,7 +18,7 @@ class Router(object):
     @asyncio.coroutine
     def error(self, *args, **kwargs):
         error_message = error(*args, **kwargs)
-        print("Error", error_message, args, kwargs)
+        print("# Error", error_message, args, kwargs)
         yield from self.websocket.send(json.dumps(error_message))
 
 
@@ -52,7 +54,7 @@ class ClientRouter(Router):
             return
 
         # 2. Build worker_id
-        worker_id = uuid4()
+        worker_id = str(uuid4())
 
         # 3. Choose a Gecko
         gecko = yield from self.cache.get('user_gecko.%s' % user_id)
@@ -67,26 +69,35 @@ class ClientRouter(Router):
             yield from self.cache.set('user_gecko.%s' % user_id, gecko)
 
         # 4. Publish to gecko
-        yield from self.cache.lpush('gecko.%s' % gecko, {
+        yield from self.cache.lpush('gecko.%s' % gecko, json.dumps({
             "messageType": "new-worker",
             "userId": user_id,
             "workerId": worker_id,
-            "source": self.standza['source'],
-            "webrtcOffer": self.standza['webrtcOffer']
-        })
+            "source": standza['source'],
+            "webrtcOffer": standza['webrtcOffer']
+        }))
 
-        reply = yield from self.cache.blpop('worker.%s' % worker_id)
-
-        if reply['messageType'] != "worker-created":
-            yield from self.error('Something went wrong: %s' % reply.get('reason'))
+        reply = yield from self.cache.blpop('worker.%s' % worker_id,
+                                            CLIENT_TIMEOUT_SECONDS)
+        if not reply:
+            yield from self.error('Gecko is not answering')
             return
 
-        return {
+        reply_body = json.loads(reply)
+
+        if reply_body['messageType'] != "worker-created":
+            yield from self.error('Something went wrong: %s' % reply_body.get('reason'))
+            return
+
+        answer = json.dumps({
             "messageType": "hello",
             "action": "worker-hello",
             "workerId": worker_id,
-            "webrtcAnswer": reply['webrtcAnswer']
-        }
+            "webrtcAnswer": reply_body['webrtcAnswer']
+        })
+        print("> %s" % answer)
+        yield from self.websocket.send(answer)
+        yield from self.websocket.close()
 
 
 class WorkerRouter(Router):
@@ -94,21 +105,26 @@ class WorkerRouter(Router):
     @asyncio.coroutine
     def dispatch(self):
         standza = yield from self.websocket.recv()
+        print("< %s" % standza)
         if standza:
             standza = json.loads(standza)
 
             if standza.get('action') == 'worker-hello':
                 gecko_id = standza['geckoID']
-                self.cache.add_to_set('geckos', gecko_id)
+                yield from self.cache.add_to_set('geckos', gecko_id)
+                print("# Register new gecko %s" % gecko_id)
 
-                while self.websocket.open():
+                while self.websocket.open:
                     task = yield from self.cache.blpop('gecko.%s' % gecko_id)
+                    task_body = json.loads(task)
+                    print("# Processing task %s" % task_body['workerId'])
                     yield from self.websocket.send(task)
 
-                    result = yield from self.websocket.recv()
-                    if result:
-                        reply = json.loads(result)
-                        worker_id = 'worker.%s' % reply['workerId']
+                    reply = yield from self.websocket.recv()
+                    if reply:
+                        reply_body = json.loads(reply)
+                        worker_id = 'worker.%s' % reply_body['workerId']
+                        print("# Answering task %s" % task_body['workerId'])
                         yield from self.cache.lpush(worker_id, reply)
 
                 yield from self.cache.remove_from_set('geckos', gecko_id)

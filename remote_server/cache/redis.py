@@ -1,10 +1,9 @@
 from __future__ import absolute_import
 from functools import wraps
 
-import time
-
 import asyncio
 import aioredis
+import time
 
 from six.moves.urllib import parse as urlparse
 
@@ -86,7 +85,7 @@ class Redis(CacheBase):
         with (yield from self._pool) as redis:
             value = yield from redis.get(key)
         if value:
-            return value.decode('utf-8')
+            return value
 
     @asyncio.coroutine
     @wrap_redis_error
@@ -110,26 +109,28 @@ class Redis(CacheBase):
     @wrap_redis_error
     def get_random(self, key):
         with (yield from self._pool) as redis:
-            yield from redis.srandmember(key)
+            value = yield from redis.srandmember(key)
+            return value
 
     @asyncio.coroutine
     @wrap_redis_error
     def get_from_set(self, key):
         with (yield from self._pool) as redis:
-            yield from redis.smembers(key)
+            value = yield from redis.smembers(key)
+            return value
 
     @asyncio.coroutine
     @wrap_redis_error
-    def blpop(self, key):
+    def blpop(self, key, timeout=0):
         with (yield from self._pool) as redis:
-            result = yield from redis.blpop(key)
-            return json.loads(result)
+            result = yield from redis.blpop(key, timeout)
+            return result[1].decode('utf-8')
 
     @asyncio.coroutine
     @wrap_redis_error
     def lpush(self, key, value):
         with (yield from self._pool) as redis:
-            yield from redis.lpush(key, json.dump(value))
+            yield from redis.lpush(key, value.encode('utf-8'))
 
 
 def load_from_config(settings):
