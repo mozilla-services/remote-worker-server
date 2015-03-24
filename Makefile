@@ -1,4 +1,4 @@
-VIRTUALENV = virtualenv
+VIRTUALENV = "virtualenv --python /usr/bin/python3"
 SPHINX_BUILDDIR = docs/_build
 VENV := $(shell echo $${VIRTUAL_ENV-.venv})
 PYTHON = $(VENV)/bin/python
@@ -13,7 +13,7 @@ OBJECTS = .venv .coverage
 all: install
 install: $(INSTALL_STAMP)
 $(INSTALL_STAMP): $(PYTHON)
-	$(PYTHON) setup.py develop
+	$(VENV)/bin/pip install -e .
 	touch $(INSTALL_STAMP)
 
 install-dev: $(INSTALL_STAMP) $(DEV_STAMP)
@@ -23,16 +23,20 @@ $(DEV_STAMP): $(PYTHON)
 
 virtualenv: $(PYTHON)
 $(PYTHON):
-	virtualenv $(VENV)
+	$(VIRTUALENV) $(VENV)
 
-serve: install-dev
+serve: install
 	$(VENV)/bin/remoteworker-serve
 
-tests-once: install-dev
-	$(VENV)/bin/nosetests -s --with-coverage --cover-package=remote_server
+mock_worker: install
+	$(PYTHON) clients_examples/worker.py
 
-tests:
-	tox
+mock_client: install
+	$(PYTHON) clients_examples/client.py
+
+tests: install-dev
+	$(VENV)/bin/nosetests -s --with-coverage --cover-package=remote_server
+	$(VENV)/bin/flake8 remote_server
 
 clean:
 	find . -name '__pycache__' -type d -exec rm -fr {} \;

@@ -15,28 +15,37 @@ CONFIG = {
     'fxa-oauth.scope': 'remote_server'
 }
 
-cache = redis.load_from_config(CONFIG)
+
+def setup_handler(cache):
+    @asyncio.coroutine
+    def handler(websocket, path):
+        try:
+            if path == '/worker':
+                router = WorkerRouter(websocket, cache, CONFIG)
+            else:
+                router = ClientRouter(websocket, cache, CONFIG)
+            yield from router.dispatch()
+        except Exception as e:
+            raise
+            error_message = error('Something went Wrong: %s' % e)
+            yield from websocket.send(json.dumps(error_message))
+            yield from websocket.close()
+            return
+
+    return handler
 
 
-@asyncio.coroutine
-def handler(websocket, path):
-    try:
-        if path == '/worker':
-            router = WorkerRouter(websocket, cache, CONFIG)
-        else:
-            router = ClientRouter(websocket, cache, CONFIG)
-        yield from router.dispatch()
-    except Exception as e:
-        raise
-        error_message = error('Something went Wrong: %s' % e)
-        yield from websocket.send(json.dumps(error_message))
-        yield from websocket.close()
-        return
+def main():
+    cache = redis.load_from_config(CONFIG)
 
-create_pooler = asyncio.async(cache.setup_pooler())
-asyncio.get_event_loop().run_until_complete(create_pooler)
+    create_pooler = asyncio.async(cache.setup_pooler())
+    asyncio.get_event_loop().run_until_complete(create_pooler)
 
-start_server = websockets.serve(handler, 'localhost', 8765)
-asyncio.get_event_loop().run_until_complete(start_server)
-print("Server running on ws://localhost:8765")
-asyncio.get_event_loop().run_forever()
+    start_server = websockets.serve(setup_handler(cache), 'localhost', 8765)
+    asyncio.get_event_loop().run_until_complete(start_server)
+    print("Server running on ws://localhost:8765")
+    asyncio.get_event_loop().run_forever()
+
+
+if __name__ == '__main__':
+    main()

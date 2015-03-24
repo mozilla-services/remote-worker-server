@@ -13,8 +13,8 @@ REQUIREMENTS = [
 ]
 
 ENTRY_POINTS = {
-    'paste.app_factory': [
-        'main = readinglist:main',
+    'console_scripts': [
+        'remoteworker-serve = remote_server:main',
     ]}
 
 
