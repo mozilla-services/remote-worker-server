@@ -14,7 +14,7 @@ def gecko(gecko_id=GECKO_ID):
     yield from websocket.send(json.dumps({
         "messageType": "hello",
         "action": "worker-hello",
-        "geckoID": gecko_id
+        "geckoId": gecko_id
     }))
 
     # Iniatialize do_while

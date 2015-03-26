@@ -110,7 +110,7 @@ class WorkerRouter(Router):
             standza = json.loads(standza)
 
             if standza.get('action') == 'worker-hello':
-                gecko_id = standza['geckoID']
+                gecko_id = standza['geckoId']
                 yield from self.cache.add_to_set('geckos', gecko_id)
                 print("# Register new gecko %s" % gecko_id)
 
