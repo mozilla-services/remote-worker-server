@@ -1,0 +1,22 @@
+ {
+   "INVALID_AUTHORIZATION": {
+     "errno": 101,
+     "reason": "Your authorization is invalid"
+   },
+   "INVALID_TOKEN": {
+     "errno": 102,
+     "reason": "Your token is invalid."
+   },
+   "UNABLE_TO_FETCH_WORKER_CODE": {
+     "errno": 201,
+     "reason": "The gecko server was not able to fetch the worker code."
+   },
+   "SYNTAX_ERROR_IN_WORKER_CODE": {
+     "errno": 202,
+     "reason": "The gecko server was not able to run the worker code due to a syntax error."
+   },
+   "UNCAUGHT_EXCEPTION_IN_WORKER_CODE": {
+     "errno": 203,
+     "reason": "The gecko server encountered a uncaught exception when running the worker."
+   }
+ }

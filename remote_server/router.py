@@ -85,17 +85,21 @@ class ClientRouter(Router):
 
         reply_body = json.loads(reply)
 
-        if reply_body['messageType'] != "worker-created":
+        if reply_body['messageType'] == "worker-created":
+            answer = json.dumps({
+                "messageType": "hello",
+                "action": "worker-hello",
+                "workerId": worker_id,
+                "webrtcAnswer": reply_body['webrtcAnswer']
+            })
+        elif reply_body['messageType'] == "worker-error":
+            answer = reply
+        else:
             yield from self.error('Something went wrong: %s' % reply_body.get('reason'))
             return
 
-        answer = json.dumps({
-            "messageType": "hello",
-            "action": "worker-hello",
-            "workerId": worker_id,
-            "webrtcAnswer": reply_body['webrtcAnswer']
-        })
         print("> %s" % answer)
+
         yield from self.websocket.send(answer)
         yield from self.websocket.close()
 
