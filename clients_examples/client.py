@@ -17,7 +17,7 @@ def browser():
         "messageType": "hello",
         "action": "client-hello",
         "authorization": "Bearer %s" % BEARER_TOKEN,
-        "source": "https://localhost:8080/worker.js",
+        "source": "http://localhost:8080/worker.js",
         "webrtcOffer": "<sdp-offer>"
     }))
     # 2. Wait for the WebRTC answer
