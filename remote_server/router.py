@@ -98,10 +98,11 @@ class ClientRouter(Router):
             yield from self.error('Something went wrong: %s' % reply_body.get('reason'))
             return
 
-        print("> %s" % answer)
-
-        yield from self.websocket.send(answer)
-        yield from self.websocket.close()
+        if self.websocket.open:
+            print("> %s" % answer)
+            # The client leaved and don't need its answer anymore
+            yield from self.websocket.send(answer)
+            yield from self.websocket.close()
 
 
 class WorkerRouter(Router):
@@ -120,6 +121,13 @@ class WorkerRouter(Router):
 
                 while self.websocket.open:
                     task = yield from self.cache.blpop('gecko.%s' % gecko_id)
+                    if not self.websocket.open:
+                        # The websocket connection was closed during the blpop
+                        # Replay the task as soon as the gecko reappear.
+                        yield from self.cache.lpush('gecko.%s' % gecko_id,
+                                                    task)
+                        return
+
                     task_body = json.loads(task)
                     print("# Processing task %s" % task_body['workerId'])
                     yield from self.websocket.send(task)
@@ -128,7 +136,7 @@ class WorkerRouter(Router):
                     if reply:
                         reply_body = json.loads(reply)
                         worker_id = 'worker.%s' % reply_body['workerId']
-                        print("# Answering task %s" % task_body['workerId'])
+                        print("# Answering task %s" % reply_body['workerId'])
                         yield from self.cache.lpush(worker_id, reply)
 
                 yield from self.cache.remove_from_set('geckos', gecko_id)
