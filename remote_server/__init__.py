@@ -44,7 +44,7 @@ def main():
     start_server = websockets.serve(setup_handler(cache), 'localhost', 8765)
     asyncio.get_event_loop().run_until_complete(start_server)
     print("Server running on ws://localhost:8765")
-    asyncio.get_event_loop().run_forever()
+    return asyncio.get_event_loop().run_forever()
 
 
 if __name__ == '__main__':
