@@ -28,7 +28,8 @@ class ClientRouter(Router):
     def dispatch(self):
         standza = yield from self.websocket.recv()
         standza = json.loads(standza)
-        if standza.get('action') == 'client-hello':
+        action = standza.get('action')
+        if action == 'client-hello':
             try:
                 yield from self.handler(standza)
             except Exception as e:
