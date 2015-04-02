@@ -11,8 +11,6 @@ logging.basicConfig(level=logging.CRITICAL)
 
 
 class ClientServerTests(unittest.TestCase):
-    secure = False
-
     def setUp(self):
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
@@ -21,8 +19,8 @@ class ClientServerTests(unittest.TestCase):
 
     def tearDown(self):
         self.stop_server()
-        self.stop_gecko()
         self.stop_client()
+        self.stop_gecko()
         self.loop.close()
 
     def start_server(self, **kwds):
@@ -37,7 +35,7 @@ class ClientServerTests(unittest.TestCase):
         self.client = self.loop.run_until_complete(client)
 
     def stop_client(self):
-        self.loop.run_until_complete(self.client.worker)
+        self.client.close()
 
     def start_gecko(self, path='', **kwds):
         gecko = connect('ws://localhost:8765/worker', **kwds)
@@ -49,4 +47,4 @@ class ClientServerTests(unittest.TestCase):
         })))
 
     def stop_gecko(self):
-        self.loop.run_until_complete(self.gecko.worker)
+        self.gecko.close()
