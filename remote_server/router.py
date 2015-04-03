@@ -32,7 +32,7 @@ class ClientRouter(Router):
             try:
                 yield from self.handler(standza)
             except Exception as e:
-                yield from self.error('Something went wrong: %s' % e)
+                yield from self.error('Something went wrong: %s %s' % (type(e), e))
             finally:
                 yield from self.websocket.close()
                 return
@@ -85,6 +85,7 @@ class ClientRouter(Router):
             return
 
         reply_body = json.loads(reply)
+        end = False
 
         if reply_body['messageType'] == "worker-created":
             answer = json.dumps({
@@ -95,14 +96,21 @@ class ClientRouter(Router):
             })
         elif reply_body['messageType'] == "worker-error":
             answer = reply
+            end = True
+        elif reply_body['messageType'] == "ice":
+            answer = reply
         else:
-            yield from self.error('Something went wrong: %s' % reply)
+            yield from self.error('Client side something went wrong: %s'
+                                  % reply)
             return
 
         # 6. Send gecko answer back to the client
         if self.websocket.open:
             print("> %s" % answer)
             yield from self.websocket.send(answer)
+
+            if end:
+                yield from self.websocket.close()
 
             # 7. Wait until connected and send back ice candidates.
             gecko_message = asyncio.Task(self.cache.blpop(
@@ -126,16 +134,16 @@ class ClientRouter(Router):
 
                         reply_body = json.loads(reply)
 
-                        if reply_body['messageType'] in ("ice",
-                                                         "worker-error"):
+                        if reply_body['messageType'] == "ice":
                             answer = reply
                             end = False
-                        elif reply_body['messageType'] == "connected":
+                        elif reply_body['messageType'] in ("connected",
+                                                           "worker-error"):
                             answer = reply
                             end = True
                         else:
-                            yield from self.error('Something went wrong: %s' %
-                                                  reply)
+                            msg = 'Gecko side something went wrong: %s' % reply
+                            yield from self.error(msg)
                             return
 
                         if self.websocket.open:
@@ -160,18 +168,18 @@ class ClientRouter(Router):
                         reply_body = json.loads(reply)
 
                         if reply_body['messageType'] == "ice" and \
-                           reply_body['messageType'] == "client-candidate" and\
+                           reply_body['action'] == "client-candidate" and \
                            'candidate' in reply_body:
                             yield from self.cache.lpush(
                                 'gecko.%s' % gecko, json.dumps({
-                                    "messageType": "id",
+                                    "messageType": "ice",
                                     "workerId": worker_id,
                                     "action": "client-candidate",
                                     "candidate": reply_body['candidate']
                                 }))
                         else:
-                            yield from self.error('Something went wrong: %s' %
-                                                  reply)
+                            msg = 'Gecko ICE something went wrong: %s' % reply
+                            yield from self.error(msg)
                             return
 
                         client_message = asyncio.Task(self.websocket.recv())
