@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-
 import asyncio
 import json
+from random import randint
 import websockets
 
 BEARER_TOKEN = "13cbb5664aaccd662d803e71e547cdb58485ce25477f" \
@@ -21,7 +21,24 @@ def browser():
         "webrtcOffer": "<sdp-offer>"
     }))
     # 2. Wait for the WebRTC answer
-    webrtc_answer = yield from websocket.recv()
-    print("< {}".format(webrtc_answer))
+    standza = yield from websocket.recv()
+    while standza:
+        # Start again
+        print("< {}".format(standza))
+
+        if randint(0, 100) < 50 and websocket.open:
+            print("# Send ICE candidate")
+            yield from websocket.send(json.dumps({
+                "messageType": "ice",
+                "action": "client-candidate",
+                "candidate": {
+                    "candidate": "candidate:2 1 UDP 2122187007 "
+                                 "10.252.27.213 41683 typ host",
+                    "sdpMid": "",
+                    "sdpMLineIndex": 0
+                }
+            }))
+
+        standza = yield from websocket.recv()
 
 asyncio.get_event_loop().run_until_complete(browser())

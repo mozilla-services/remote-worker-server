@@ -52,6 +52,13 @@ def gecko(gecko_id=GECKO_ID):
         yield from websocket.send(answer)
         print("> %s" % answer)
 
+        answer = json.dumps({
+            "messageType": "connected",
+            "workerId": request['workerId'],
+        })
+        yield from websocket.send(answer)
+        print("> %s" % answer)
+
         # Start again
         standza = yield from websocket.recv()
 
