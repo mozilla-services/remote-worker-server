@@ -20,6 +20,17 @@ def browser():
         "source": "http://localhost:8080/worker.js",
         "webrtcOffer": "<sdp-offer>"
     }))
+    yield from websocket.send(json.dumps({
+        "messageType": "ice",
+        "action": "client-candidate",
+        "candidate": {
+            "candidate": "candidate:2 1 UDP 2122187007 "
+            "10.252.27.213 41683 typ host",
+            "sdpMid": "",
+            "sdpMLineIndex": 0
+        }
+    }))
+
     # 2. Wait for the WebRTC answer
     standza = yield from websocket.recv()
     while standza:

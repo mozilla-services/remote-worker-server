@@ -134,7 +134,14 @@ class ClientRouter(Router):
 
                         reply_body = json.loads(reply)
 
-                        if reply_body['messageType'] == "ice":
+                        if reply_body['messageType'] == "worker-created":
+                            answer = json.dumps({
+                                "messageType": "hello",
+                                "action": "worker-hello",
+                                "workerId": worker_id,
+                                "webrtcAnswer": reply_body['webrtcAnswer']
+                            })
+                        elif reply_body['messageType'] == "ice":
                             answer = reply
                             end = False
                         elif reply_body['messageType'] in ("connected",
