@@ -1,0 +1,29 @@
+{
+  "name": "mozilla-remote-worker-tests",
+  "description": "The Mozilla Remote Server tests",
+  "version": "0.1.0-dev",
+  "author": "Mozilla (https://mozilla.org/)",
+  "homepage": "https://github.com/mozilla-services/remote-worker-server/",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:mozilla-services/remote-worker-server.git"
+  },
+  "engines": {
+    "node": "0.10.x",
+    "npm": "1.3.x"
+  },
+  "dependencies": {
+    "ws": "0.7.1"
+  },
+  "devDependencies": {
+    "chai": "2.0.0",
+    "mocha": "2.1.0",
+    "sinon": "1.12.2"
+  },
+  "scripts": {
+    "test": "make test",
+    "outdated": "npm outdated --depth 0"
+  },
+  "license": "MPL-2.0",
+  "keywords": []
+}

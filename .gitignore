@@ -4,3 +4,6 @@ __pycache__
 *.egg-info/
 .coverage
 .venv/
+.tox/
+tests/node_modules/
+tests/npm-debug.log

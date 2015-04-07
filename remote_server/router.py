@@ -162,8 +162,7 @@ class ClientRouter(Router):
                                 return
 
                             gecko_message = asyncio.Task(self.cache.blpop(
-                                'worker.%s' % worker_id,
-                                CLIENT_TIMEOUT_SECONDS))
+                                'worker.%s' % worker_id))
                             pending.add(gecko_message)
                     else:
                         # 9. Receive a client ice message
@@ -214,8 +213,7 @@ class WorkerRouter(Router):
                 print("# Register new gecko %s" % gecko_id)
 
                 client_message = asyncio.Task(self.cache.blpop(
-                    'gecko.%s' % gecko_id,
-                    CLIENT_TIMEOUT_SECONDS))
+                    'gecko.%s' % gecko_id))
                 gecko_message = asyncio.Task(self.websocket.recv())
                 pending = {client_message, gecko_message}
 
@@ -227,6 +225,7 @@ class WorkerRouter(Router):
 
                     for task in done:
                         if task is client_message:
+                            print("client message received (BLPOP)")
                             # 3. Handle client messages
                             try:
                                 task = task.result()
@@ -247,13 +246,14 @@ class WorkerRouter(Router):
                             yield from self.websocket.send(task)
 
                             client_message = asyncio.Task(self.cache.blpop(
-                                'gecko.%s' % gecko_id,
-                                CLIENT_TIMEOUT_SECONDS))
+                                'gecko.%s' % gecko_id))
                             pending.add(client_message)
                         elif task is gecko_message:
+                            print("websocket message received (RECV)")
                             # Handle gecko_messages
                             reply = task.result()
-                            if not reply:
+                            if reply is None:
+                                print("websocket had been closed")
                                 # Websocket closed
                                 yield from self.cache.remove_from_set('geckos',
                                                                       gecko_id)

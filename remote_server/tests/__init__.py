@@ -38,7 +38,7 @@ class ClientServerTests(unittest.TestCase):
 
     def stop_client(self):
         print("$ Wait for client to terminate")
-        self.loop.run_until_complete(self.client.worker)
+        self.loop.run_until_complete(self.client.close())
         print("$ Client stopped")
 
     def start_gecko(self, path='', **kwds):
@@ -51,7 +51,6 @@ class ClientServerTests(unittest.TestCase):
         })))
 
     def stop_gecko(self):
-        self.gecko.close()
         print("# Wait for gecko to terminate")
-        self.loop.run_until_complete(self.gecko.worker)
+        self.loop.run_until_complete(self.gecko.close())
         print("# Gecko stopped")
