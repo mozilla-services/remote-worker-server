@@ -28,14 +28,18 @@ class ClientServerTests(unittest.TestCase):
 
     def stop_server(self):
         self.server.close()
+        print("% Wait for server to terminate")
         self.loop.run_until_complete(self.server.wait_closed())
+        print("% Server stopped")
 
     def start_client(self, path='', **kwds):
         client = connect('ws://localhost:8765/' + path, **kwds)
         self.client = self.loop.run_until_complete(client)
 
     def stop_client(self):
-        self.client.close()
+        print("$ Wait for client to terminate")
+        self.loop.run_until_complete(self.client.worker)
+        print("$ Client stopped")
 
     def start_gecko(self, path='', **kwds):
         gecko = connect('ws://localhost:8765/worker', **kwds)
@@ -48,3 +52,6 @@ class ClientServerTests(unittest.TestCase):
 
     def stop_gecko(self):
         self.gecko.close()
+        print("# Wait for gecko to terminate")
+        self.loop.run_until_complete(self.gecko.worker)
+        print("# Gecko stopped")
