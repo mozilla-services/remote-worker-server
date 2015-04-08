@@ -14,16 +14,20 @@ with open(os.path.join(os.path.dirname(__file__), '../../errors.json')) as f:
 
 
 class ClientTestCase(ClientServerTests):
-    def test_when_client_ask_an_offer_gecko_receive_it(self):
-        self.start_client()
-        # 1. Client send the offer
-        self.loop.run_until_complete(self.client.send(json.dumps({
+    def setUp(self):
+        super(ClientTestCase, self).setUp()
+        self.client_hello = json.dumps({
             "messageType": "hello",
             "action": "client-hello",
             "authorization": "Bearer %s" % BEARER_TOKEN,
             "source": "http://localhost:8080/worker.js",
             "webrtcOffer": "<sdp-offer>"
-        })))
+        })
+
+    def test_when_client_asks_an_offer_gecko_receives_it(self):
+        self.start_client()
+        # 1. Client send the offer
+        self.loop.run_until_complete(self.client.send(self.client_hello))
 
         # 2. Gecko receive the offer
         gecko_received = self.loop.run_until_complete(self.gecko.recv())
@@ -37,16 +41,10 @@ class ClientTestCase(ClientServerTests):
             "webrtcOffer": "<sdp-offer>"
         })
 
-    def test_when_gecko_answer_an_offer_client_receive_it(self):
+    def test_when_gecko_answers_an_offer_client_receives_it(self):
         self.start_client()
         # 1. Client send the offer
-        self.loop.run_until_complete(self.client.send(json.dumps({
-            "messageType": "hello",
-            "action": "client-hello",
-            "authorization": "Bearer %s" % BEARER_TOKEN,
-            "source": "http://localhost:8080/worker.js",
-            "webrtcOffer": "<sdp-offer>"
-        })))
+        self.loop.run_until_complete(self.client.send(self.client_hello))
 
         # 2. Gecko receive the offer
         gecko_received = self.loop.run_until_complete(self.gecko.recv())
@@ -71,16 +69,10 @@ class ClientTestCase(ClientServerTests):
             "webrtcAnswer": "<sdp-answer>"
         })
 
-    def test_when_gecko_answer_an_error_client_receive_it(self):
+    def test_when_gecko_answers_an_error_client_receives_it(self):
         self.start_client()
         # 1. Client send the offer
-        self.loop.run_until_complete(self.client.send(json.dumps({
-            "messageType": "hello",
-            "action": "client-hello",
-            "authorization": "Bearer %s" % BEARER_TOKEN,
-            "source": "http://localhost:8080/worker.js",
-            "webrtcOffer": "<sdp-offer>"
-        })))
+        self.loop.run_until_complete(self.client.send(self.client_hello))
 
         # 2. Gecko receive the offer
         gecko_received = self.loop.run_until_complete(self.gecko.recv())

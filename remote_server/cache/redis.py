@@ -64,10 +64,7 @@ class Redis(CacheBase):
     @wrap_redis_error
     def ttl(self, key):
         with (yield from self._pool) as redis:
-            try:
-                yield from redis.ttl(key)
-            except asyncio.CancelledError:
-                redis._conn._do_close()
+            yield from redis.ttl(key)
 
     @asyncio.coroutine
     @wrap_redis_error
