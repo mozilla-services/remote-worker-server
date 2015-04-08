@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from collections import defaultdict
 from functools import wraps
 
 import asyncio
@@ -37,11 +38,12 @@ class Redis(CacheBase):
         super(Redis, self).__init__(*args, **kwargs)
         self.host = host
         self.port = port
+        self._blpop_conn = defaultdict(lambda: None)
 
     @asyncio.coroutine
     def setup_pooler(self):
         self._pool = yield from aioredis.create_pool(
-            (self.host, self.port), encoding="utf-8", minsize=5, maxsize=10)
+            (self.host, self.port), encoding="utf-8", minsize=1, maxsize=100)
 
     @asyncio.coroutine
     @wrap_redis_error
@@ -62,7 +64,10 @@ class Redis(CacheBase):
     @wrap_redis_error
     def ttl(self, key):
         with (yield from self._pool) as redis:
-            yield from redis.ttl(key)
+            try:
+                yield from redis.ttl(key)
+            except asyncio.CancelledError:
+                redis._conn._do_close()
 
     @asyncio.coroutine
     @wrap_redis_error
@@ -123,14 +128,27 @@ class Redis(CacheBase):
     @wrap_redis_error
     def blpop(self, key, timeout=0):
         with (yield from self._pool) as redis:
-            result = yield from redis.blpop(key, timeout)
-            return result[1].decode('utf-8')
+            self._blpop_conn[key] = redis._conn
+            try:
+                result = yield from redis.blpop(key, timeout)
+            except asyncio.CancelledError:
+                print("Cancel Handled")
+                redis._conn._do_close()
+                raise
+            else:
+                return result[1].decode('utf-8')
 
     @asyncio.coroutine
     @wrap_redis_error
     def lpush(self, key, value):
         with (yield from self._pool) as redis:
             yield from redis.lpush(key, value.encode('utf-8'))
+
+    def close_connection(self, key):
+        _conn = self._blpop_conn[key]
+        if _conn:
+            _conn._do_close(None)
+            del self._blpop_conn[key]
 
 
 def load_from_config(settings):

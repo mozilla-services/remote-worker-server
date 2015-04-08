@@ -29,7 +29,8 @@ class ClientRouter(Router):
     def dispatch(self):
         standza = yield from self.websocket.recv()
         standza = json.loads(standza)
-        if standza.get('action') == 'client-hello':
+        action = standza.get('action')
+        if action == 'client-hello':
             try:
                 yield from self.handler(standza)
             except Exception as e:
@@ -37,12 +38,10 @@ class ClientRouter(Router):
                                       % (type(e), e))
                 yield from self.error(traceback.format_exc())
             finally:
-                yield from self.websocket.close()
-                return
+                if self.websocket.open:
+                    yield from self.websocket.close()
         else:
-            yield from self.error('action not found: %s'
-                                  % standza.get('action'))
-            return
+            yield from self.error('action not found: %s' % action)
 
     def get_worker_id(self):
         return str(uuid4())
@@ -126,6 +125,9 @@ class ClientRouter(Router):
     def read_from_gecko(self, worker_id, timeout=0):
         return self.cache.blpop('worker.%s' % worker_id, timeout)
 
+    def close_gecko_connection(self, worker_id):
+        self.cache.close_connection('worker.%s' % worker_id)
+
     @asyncio.coroutine
     def handler(self, standza):
         # 1. Validate Authorization
@@ -156,7 +158,7 @@ class ClientRouter(Router):
 
         # 5. Wait for Gecko WebRTCAnswer
         timeout = CLIENT_TIMEOUT_SECONDS
-        reply = yield from self.read_from_gecko(worker_id, timeout)
+        reply = yield from (self.read_from_gecko(worker_id, timeout))
 
         if not reply:
             yield from self.error('Gecko is not answering')
@@ -177,9 +179,10 @@ class ClientRouter(Router):
             try:
                 done, pending = yield from asyncio.wait(
                     pending, return_when=asyncio.FIRST_COMPLETED)
-            except asyncio.CancelledError:
-                self.cache._conn._do_close(None)
+            except:
+                self.close_gecko_connection(worker_id)
                 client_message.cancel()
+                raise
 
             for task in done:
                 if task is gecko_message:
@@ -200,8 +203,8 @@ class ClientRouter(Router):
                     raw_message = task.result()
 
                     if not raw_message:
+                        self.close_gecko_connection(worker_id)
                         print("Client connection closed.")
-                        self.cache._conn._do_close(None)
                         return
 
                     end = yield from self.handle_client_message(raw_message,
@@ -209,7 +212,6 @@ class ClientRouter(Router):
                                                                 worker_id)
 
                     if end:
-                        self.cache._conn._do_close(None)
                         return
 
                     client_message = asyncio.Task(self.websocket.recv())
@@ -235,20 +237,28 @@ class WorkerRouter(Router):
                 pending = {client_message, gecko_message}
 
                 while self.websocket.open:
+                    print("Websocket open, waiting for message")
                     # 2. Wait for messages on both client and gecko streams.
-                    done, pending = yield from asyncio.wait(
-                        pending,
-                        return_when=asyncio.FIRST_COMPLETED)
+                    try:
+                        done, pending = yield from asyncio.wait(
+                            pending, return_when=asyncio.FIRST_COMPLETED)
+                    except:
+                        self.close_worker_connection(gecko_id)
+                        gecko_message.cancel()
+                        raise
 
                     for task in done:
                         if task is client_message:
                             # 3. Handle client messages
                             raw_message = task.result()
+                            print("Worker raw_message: %s" % raw_message)
 
                             if not self.websocket.open:
                                 # The websocket connection was closed
                                 # during the blpop Replay the task as
                                 # soon as the gecko reappear.
+                                print("Gecko left, adding back the task")
+                                self.close_worker_connection(gecko_id)
                                 yield from self.publish_to_gecko(gecko_id,
                                                                  raw_message)
                                 return
@@ -260,9 +270,10 @@ class WorkerRouter(Router):
                         elif task is gecko_message:
                             # Handle gecko_messages
                             raw_message = task.result()
+                            print("Gecko raw_message: %s" % raw_message)
                             if not raw_message:
                                 # Websocket closed
-                                self.cache._conn._do_close(None)
+                                self.close_worker_connection(gecko_id)
                                 yield from self.unregister_gecko(gecko_id)
                                 return
 
@@ -290,6 +301,9 @@ class WorkerRouter(Router):
 
     def read_from_worker(self, gecko_id):
         return self.cache.blpop('gecko.%s' % gecko_id)
+
+    def close_worker_connection(self, gecko_id):
+        self.cache.close_connection('gecko.%s' % gecko_id)
 
     @asyncio.coroutine
     def handle_client_message(self, raw_message):

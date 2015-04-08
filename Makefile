@@ -34,9 +34,12 @@ mock_worker: install
 mock_client: install
 	$(PYTHON) clients_examples/client.py
 
-tests: install-dev
+tests-once: install-dev
 	$(VENV)/bin/nosetests -s --with-coverage --cover-package=remote_server
 	$(VENV)/bin/flake8 remote_server
+
+tests: install-dev
+	$(VENV)/bin/tox
 
 clean:
 	find . -name '__pycache__' -type d -exec rm -fr {} \;

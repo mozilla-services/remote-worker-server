@@ -34,14 +34,18 @@ def setup_handler(cache):
     return handler
 
 
-def main():
+def setup_server():
     cache = redis.load_from_config(CONFIG)
 
     create_pooler = asyncio.async(cache.setup_pooler())
     asyncio.get_event_loop().run_until_complete(create_pooler)
 
     start_server = websockets.serve(setup_handler(cache), 'localhost', 8765)
-    asyncio.get_event_loop().run_until_complete(start_server)
+    return asyncio.get_event_loop().run_until_complete(start_server)
+
+
+def main():
+    setup_server()
     print("Server running on ws://localhost:8765")
     asyncio.get_event_loop().run_forever()
 
