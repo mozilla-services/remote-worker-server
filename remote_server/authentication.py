@@ -4,8 +4,6 @@ import hashlib
 import hmac
 import json
 
-from six.moves.urllib.parse import urljoin
-
 from remote_server import exceptions
 
 DEFAULT_SERVER_URL = "https://oauth.accounts.firefox.com/v1"

@@ -40,7 +40,8 @@ class ClientRouter(Router):
                 yield from self.websocket.close()
                 return
         else:
-            yield from self.error('action not found: %s' % action)
+            yield from self.error('action not found: %s'
+                                  % standza.get('action'))
             return
 
     def get_worker_id(self):
@@ -80,7 +81,7 @@ class ClientRouter(Router):
             })
             return False
         else:
-            msg = 'Wrong client ICE message type: %s' % reply
+            msg = 'Wrong client ICE message type: %s' % raw_message
             yield from self.error(msg)
             return True
 
@@ -185,7 +186,8 @@ class ClientRouter(Router):
                     # 8. Received gecko ice or connected message
                     raw_message = task.result()
 
-                    end = yield from self.handle_gecko_message(raw_message, worker_id)
+                    end = yield from self.handle_gecko_message(raw_message,
+                                                               worker_id)
                     if end:
                         client_message.cancel()
                         return

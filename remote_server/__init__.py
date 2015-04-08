@@ -5,7 +5,6 @@ import json
 import websockets
 
 from remote_server.error import error
-from remote_server.exceptions import BackendError
 from remote_server.router import ClientRouter, WorkerRouter
 from remote_server.cache import redis
 

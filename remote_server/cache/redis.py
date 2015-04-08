@@ -16,7 +16,7 @@ def wrap_redis_error(func):
     def wrapped(*args, **kwargs):
         try:
             return func(*args, **kwargs)
-        except (redis.RedisError, ValueError) as e:
+        except (OSError, ValueError) as e:
             raise BackendError(original=e)
     return wrapped
 
@@ -55,7 +55,7 @@ class Redis(CacheBase):
             try:
                 yield from redis.setex('heartbeat', 3600, time.time())
                 return True
-            except redis.RedisError:
+            except OSError:
                 return False
 
     @asyncio.coroutine
