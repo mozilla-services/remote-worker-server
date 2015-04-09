@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import logging
 import websockets
 
 from remote_server.error import error
@@ -13,6 +14,8 @@ CONFIG = {
     'fxa-oauth.server_url': 'https://oauth.accounts.firefox.com',
     'fxa-oauth.scope': 'remote_server'
 }
+
+logging.basicConfig(level=logging.INFO)
 
 
 def setup_handler(cache):
@@ -34,14 +37,18 @@ def setup_handler(cache):
     return handler
 
 
-def main():
+def setup_server():
     cache = redis.load_from_config(CONFIG)
 
     create_pooler = asyncio.async(cache.setup_pooler())
     asyncio.get_event_loop().run_until_complete(create_pooler)
 
     start_server = websockets.serve(setup_handler(cache), 'localhost', 8765)
-    asyncio.get_event_loop().run_until_complete(start_server)
+    return asyncio.get_event_loop().run_until_complete(start_server)
+
+
+def main():
+    setup_server()
     print("Server running on ws://localhost:8765")
     asyncio.get_event_loop().run_forever()
 
