@@ -13,9 +13,9 @@ with open(os.path.join(os.path.dirname(__file__), '../../errors.json')) as f:
     ERRORS = json.loads(f.read())
 
 
-class ClientTestCase(ClientServerTests):
+class ClientServerTestCase(ClientServerTests):
     def setUp(self):
-        super(ClientTestCase, self).setUp()
+        super(ClientServerTestCase, self).setUp()
         self.client_hello = json.dumps({
             "messageType": "hello",
             "action": "client-hello",
