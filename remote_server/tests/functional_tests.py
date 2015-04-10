@@ -34,6 +34,17 @@ class ClientServerTestCase(ClientServerTests):
             }
         })
 
+        self.gecko_ice = {
+            "messageType": "ice",
+            "action": "worker-candidate",
+            "candidate": {
+                "candidate": "candidate:2 1 UDP 2122187007 "
+                "10.252.27.213 41683 typ host",
+                "sdpMid": "",
+                "sdpMLineIndex": 0
+            }
+        }
+
     def test_when_client_asks_an_offer_gecko_receives_it(self):
         self.start_client()
         # 1. Client send the offer
@@ -151,3 +162,101 @@ class ClientServerTestCase(ClientServerTests):
         answer = json.loads(self.client_ice)
         answer['workerId'] = data['workerId']
         self.assertDictEqual(data, answer)
+
+    def test_when_gecko_answers_ice_candidates_client_receives_them(self):
+        self.start_client()
+        # 1. Client send the offer
+        self.loop.run_until_complete(self.client.send(self.client_hello))
+
+        # 2. Gecko receive the offer
+        gecko_received = self.loop.run_until_complete(self.gecko.recv())
+        data = json.loads(gecko_received)
+
+        # 3. Gecko send back the answer
+        worker_id = data["workerId"]
+        self.loop.run_until_complete(self.gecko.send(json.dumps({
+            "messageType": "worker-created",
+            "workerId": worker_id,
+            "webrtcAnswer": "<sdp-answer>"
+        })))
+
+        # 4. Check that client received the anwser
+        client_received = self.loop.run_until_complete(self.client.recv())
+        data = json.loads(client_received)
+
+        self.assertDictEqual(data, {
+            "messageType": "hello",
+            "action": "worker-hello",
+            "workerId": worker_id,
+            "webrtcAnswer": "<sdp-answer>"
+        })
+
+        # 5. Gecko send ICE candidate
+        self.gecko_ice['workerId'] = worker_id
+        self.gecko_ice['candidate']['sdpMid'] = "1234"
+        answer = json.dumps(self.gecko_ice)
+        self.loop.run_until_complete(self.gecko.send(answer))
+
+        # 6. Check that client received the ICE
+        client_received = self.loop.run_until_complete(self.client.recv())
+        data = json.loads(client_received)
+
+        self.assertDictEqual(data, self.gecko_ice)
+
+        # 7. Gecko send ICE candidate
+        self.gecko_ice['workerId'] = worker_id
+        self.gecko_ice['candidate']['sdpMid'] = "5678"
+        answer = json.dumps(self.gecko_ice)
+        self.loop.run_until_complete(self.gecko.send(answer))
+
+        # 8. Check that client received the ICE
+        client_received = self.loop.run_until_complete(self.client.recv())
+        data = json.loads(client_received)
+
+        self.assertDictEqual(data, self.gecko_ice)
+
+    def test_when_gecko_answers_connected_client_connection_is_closed(self):
+        self.start_client()
+        # 1. Client send the offer
+        self.loop.run_until_complete(self.client.send(self.client_hello))
+
+        # 2. Gecko receive the offer
+        gecko_received = self.loop.run_until_complete(self.gecko.recv())
+        data = json.loads(gecko_received)
+
+        # 3. Gecko send back the answer
+        worker_id = data["workerId"]
+        self.loop.run_until_complete(self.gecko.send(json.dumps({
+            "messageType": "worker-created",
+            "workerId": worker_id,
+            "webrtcAnswer": "<sdp-answer>"
+        })))
+
+        # 4. Check that client received the anwser
+        client_received = self.loop.run_until_complete(self.client.recv())
+        data = json.loads(client_received)
+
+        self.assertDictEqual(data, {
+            "messageType": "hello",
+            "action": "worker-hello",
+            "workerId": worker_id,
+            "webrtcAnswer": "<sdp-answer>"
+        })
+
+        # 6. Gecko send connected
+        self.loop.run_until_complete(self.gecko.send(json.dumps({
+            "messageType": "connected",
+            "workerId": worker_id
+        })))
+
+        # 7. Check that client received connected
+        client_received = self.loop.run_until_complete(self.client.recv())
+        data = json.loads(client_received)
+
+        self.assertDictEqual(data, {
+            "messageType": "connected",
+            "workerId": worker_id
+        })
+
+        # 8. Make sure client websocket is closed.
+        self.loop.run_until_complete(self.client.worker)
