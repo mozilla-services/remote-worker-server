@@ -130,7 +130,7 @@ class Redis(CacheBase):
                 result = yield from redis.blpop(key, timeout)
             except asyncio.CancelledError:
                 print("Cancel Handled")
-                redis._conn._do_close()
+                redis._conn._do_close(None)
                 raise
             else:
                 return result[1].decode('utf-8')
