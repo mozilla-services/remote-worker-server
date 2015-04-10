@@ -331,3 +331,34 @@ class ClientServerTestCase(ClientServerTests):
 
         # 4. Make sure client websocket is closed.
         self.loop.run_until_complete(self.client.worker)
+
+    def test_when_gecko_sends_wrong_json_as_answer(self):
+        self.start_client()
+
+        # 1. Client send the offer
+        self.loop.run_until_complete(self.client.send(self.client_hello))
+
+        # 2. Gecko receive the offer
+        gecko_received = self.loop.run_until_complete(self.gecko.recv())
+        data = json.loads(gecko_received)
+
+        # 3. Gecko send back the answer
+        worker_id = data["workerId"]
+        answer = json.dumps({
+            "messageType": "worker-created",
+            "workerId": worker_id,
+            "webrtcAnswer": "<sdp-answer>"
+        })
+        malformed_answer = answer[:10]
+        self.loop.run_until_complete(self.gecko.send(malformed_answer))
+
+        # 4. Check that client received the answer
+        client_received = self.loop.run_until_complete(self.client.recv())
+        data = json.loads(client_received)
+
+        self.assertDictEqual(data, {
+            "messageType": "progress",
+            'reason': 'Wrong JSON gecko message: %s' % malformed_answer,
+            'status': 'terminated',
+            'workerId': None
+        })

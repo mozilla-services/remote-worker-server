@@ -7,7 +7,7 @@ from remote_server.authentication import authenticate
 from remote_server.error import error
 from remote_server.exceptions import NotAuthenticatedError
 
-CLIENT_TIMEOUT_SECONDS = 30
+CLIENT_TIMEOUT_SECONDS = 3
 
 
 class Router(object):
@@ -129,11 +129,23 @@ class ClientRouter(Router):
     def publish_to_gecko(self, gecko_id, obj):
         yield from self.cache.lpush('gecko.%s' % gecko_id, json.dumps(obj))
 
-    def read_from_gecko(self, worker_id, timeout=0):
-        return self.cache.blpop('worker.%s' % worker_id, timeout)
+    def read_from_gecko(self, worker_id, timeout=CLIENT_TIMEOUT_SECONDS):
+        return asyncio.wait_for(
+            self.cache.blpop('worker.%s' % worker_id, timeout),
+            timeout
+        )
+
+    @asyncio.coroutine
+    def read_gecko_error(self, gecko_id):
+        answer = yield from asyncio.wait_for(
+            self.cache.blpop('gecko_error.%s' % gecko_id, 1), 1)
+        return answer
 
     def close_gecko_connection(self, worker_id):
         self.cache.close_connection('worker.%s' % worker_id)
+
+    def close_gecko_error_connection(self, gecko_id):
+        self.cache.close_connection('gecko_error.%s' % gecko_id)
 
     @asyncio.coroutine
     def handler(self, standza):
@@ -174,20 +186,28 @@ class ClientRouter(Router):
 
         while self.websocket.open:
             print("$ Client pending on:", pending)
-            try:
-                done, pending = yield from asyncio.wait(
-                    pending, return_when=asyncio.FIRST_COMPLETED)
-            except:
-                self.close_gecko_connection(worker_id)
-                client_message.cancel()
-                raise
+            done, pending = yield from asyncio.wait(
+                pending, return_when=asyncio.FIRST_COMPLETED)
 
             for task in done:
                 print("$ Handling task:", task)
                 if task is gecko_message:
                     print("$ It is a gecko_message")
                     # 8. Received gecko ice or connected message
-                    raw_message = task.result()
+                    try:
+                        raw_message = task.result()
+                    except asyncio.TimeoutError:
+                        self.close_gecko_connection(worker_id)
+                        client_message.cancel()
+                        try:
+                            print("read_gecko_error")
+                            answer = yield from self.read_gecko_error(gecko)
+                        except asyncio.TimeoutError:
+                            self.close_gecko_error_connection(gecko)
+                            return
+                        else:
+                            yield from self.websocket.send(answer)
+                            return
 
                     end = yield from self.handle_gecko_message(raw_message,
                                                                worker_id)
@@ -240,20 +260,20 @@ class WorkerRouter(Router):
                 while self.websocket.open:
                     # 2. Wait for messages on both client and gecko streams.
                     print("# Server pending on:", pending)
-                    try:
-                        done, pending = yield from asyncio.wait(
-                            pending, return_when=asyncio.FIRST_COMPLETED)
-                    except:
-                        self.close_worker_connection(gecko_id)
-                        gecko_message.cancel()
-                        raise
+                    done, pending = yield from asyncio.wait(
+                        pending, return_when=asyncio.FIRST_COMPLETED)
 
                     for task in done:
                         print("# Handling task", task)
                         if task is client_message:
                             print("# It is a Client message")
                             # 3. Handle client messages
-                            raw_message = task.result()
+                            try:
+                                raw_message = task.result()
+                            except:
+                                self.close_worker_connection(gecko_id)
+                                gecko_message.cancel()
+                                raise
 
                             if not self.websocket.open:
                                 # The websocket connection was closed
@@ -279,7 +299,8 @@ class WorkerRouter(Router):
                                 yield from self.unregister_gecko(gecko_id)
                                 return
 
-                            yield from self.handle_gecko_message(raw_message)
+                            yield from self.handle_gecko_message(gecko_id,
+                                                                 raw_message)
 
                             gecko_message = asyncio.Task(self.websocket.recv())
                             pending.add(gecko_message)
@@ -301,6 +322,11 @@ class WorkerRouter(Router):
     def publish_to_worker(self, worker_id, obj):
         yield from self.cache.lpush('worker.%s' % worker_id, json.dumps(obj))
 
+    @asyncio.coroutine
+    def publish_gecko_error(self, gecko_id, obj):
+        yield from self.cache.lpush('gecko_error.%s' % gecko_id,
+                                    json.dumps(obj))
+
     def read_from_worker(self, gecko_id):
         return self.cache.blpop('gecko.%s' % gecko_id)
 
@@ -314,13 +340,15 @@ class WorkerRouter(Router):
         yield from self.websocket.send(raw_message)
 
     @asyncio.coroutine
-    def handle_gecko_message(self, raw_message):
+    def handle_gecko_message(self, gecko_id, raw_message):
         try:
             message = json.loads(raw_message)
         except ValueError:
-            # Impossible to build an error because we don't know which
-            # workerId it is related to.
-            raise
+            # Send the error to the error channel so that the waiting
+            # worker can read it.
+            message = error("Wrong JSON gecko message: %s" % raw_message)
+            yield from self.publish_gecko_error(gecko_id, message)
+            return
 
         worker_id = message['workerId']
         print("# Answering task %s" % worker_id)
