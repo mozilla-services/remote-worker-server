@@ -28,7 +28,14 @@ class ClientRouter(Router):
     @asyncio.coroutine
     def dispatch(self):
         standza = yield from self.websocket.recv()
-        standza = json.loads(standza)
+
+        try:
+            standza = json.loads(standza)
+        except ValueError:
+            yield from self.error('Message from client is not valid JSON: %s'
+                                  % standza)
+            yield from self.websocket.close()
+
         action = standza.get('action')
         if action == 'client-hello':
             try:

@@ -260,3 +260,74 @@ class ClientServerTestCase(ClientServerTests):
 
         # 8. Make sure client websocket is closed.
         self.loop.run_until_complete(self.client.worker)
+
+    def test_when_client_sends_wrong_json_as_hello(self):
+        self.start_client()
+
+        # 1. Client send the offer
+        message = self.client_hello[:10]
+        self.loop.run_until_complete(self.client.send(message))
+
+        # 2. Client receive error message
+        client_received = self.loop.run_until_complete(self.client.recv())
+        data = json.loads(client_received)
+
+        self.assertDictEqual(data, {
+            "messageType": "progress",
+            "status": "terminated",
+            "workerId": None,
+            "reason": "Message from client is not valid JSON: %s" % message
+        })
+
+        # 3. Make sure client websocket is closed.
+        self.loop.run_until_complete(self.client.worker)
+
+    def test_when_client_sends_wrong_json_as_ice(self):
+        self.start_client()
+
+        # 1. Client send the offer
+        self.loop.run_until_complete(self.client.send(self.client_hello))
+
+        # 2. Client send the wrong ice
+        message = self.client_ice[:10]
+        self.loop.run_until_complete(self.client.send(message))
+
+        # 3. Client receive error message
+        client_received = self.loop.run_until_complete(self.client.recv())
+        data = json.loads(client_received)
+
+        self.assertDictEqual(data, {
+            "messageType": "progress",
+            "status": "terminated",
+            "workerId": None,
+            "reason": "Message from client is not valid JSON: %s" % message
+        })
+
+        # 4. Make sure client websocket is closed.
+        self.loop.run_until_complete(self.client.worker)
+
+    def test_when_client_sends_unknown_action(self):
+        self.start_client()
+
+        # 1. Client send the offer
+        self.loop.run_until_complete(self.client.send(self.client_hello))
+
+        # 2. Client send the wrong ice
+        answer = json.dumps(self.gecko_ice)
+        self.loop.run_until_complete(
+            self.client.send(answer)
+        )
+
+        # 3. Client receive error message
+        client_received = self.loop.run_until_complete(self.client.recv())
+        data = json.loads(client_received)
+        self.maxDiff = None
+        self.assertDictEqual(data, {
+            "messageType": "progress",
+            'reason': 'Wrong client ICE message type: %s' % answer,
+            'status': 'terminated',
+            'workerId': None
+        })
+
+        # 4. Make sure client websocket is closed.
+        self.loop.run_until_complete(self.client.worker)
