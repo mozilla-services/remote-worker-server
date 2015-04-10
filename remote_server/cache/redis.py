@@ -127,7 +127,7 @@ class Redis(CacheBase):
         with (yield from self._pool) as redis:
             self._blpop_conn[key] = redis._conn
             try:
-                result = yield from redis.blpop(key, timeout)
+                result = yield from redis.blpop(key, timeout=timeout)
             except asyncio.CancelledError:
                 print("Cancel Handled")
                 redis._conn._do_close(None)

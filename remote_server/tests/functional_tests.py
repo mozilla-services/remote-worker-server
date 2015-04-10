@@ -362,3 +362,70 @@ class ClientServerTestCase(ClientServerTests):
             'status': 'terminated',
             'workerId': None
         })
+
+    def test_when_gecko_dies_reboot_can_continue_to_answer_the_task(self):
+        self.start_client()
+
+        # 1. Client send the offer
+        self.loop.run_until_complete(self.client.send(self.client_hello))
+
+        # 2. Gecko receives the task
+        gecko_received = self.loop.run_until_complete(self.gecko.recv())
+        data = json.loads(gecko_received)
+
+        # 3. Gecko dies
+        self.stop_gecko()
+
+        # 4. Gecko restarts
+        self.start_gecko()
+
+        # 5. Gecko send back the answer
+        worker_id = data["workerId"]
+        self.loop.run_until_complete(self.gecko.send(json.dumps({
+            "messageType": "worker-created",
+            "workerId": worker_id,
+            "webrtcAnswer": "<sdp-answer>"
+        })))
+
+        # 6. Check that client received the anwser
+        client_received = self.loop.run_until_complete(self.client.recv())
+        data = json.loads(client_received)
+
+        self.assertDictEqual(data, {
+            "messageType": "hello",
+            "action": "worker-hello",
+            "workerId": worker_id,
+            "webrtcAnswer": "<sdp-answer>"
+        })
+
+    def test_when_gecko_send_an_invalid_message_worker_know_it(self):
+        self.start_client()
+
+        # 1. Client send the offer
+        self.loop.run_until_complete(self.client.send(self.client_hello))
+
+        # 2. Gecko receive the offer
+        gecko_received = self.loop.run_until_complete(self.gecko.recv())
+        data = json.loads(gecko_received)
+
+        # 3. Gecko send back the answer
+        worker_id = data["workerId"]
+        answer = json.dumps({
+            "messageType": "worker-unknow-message",
+            "workerId": worker_id,
+            "webrtcAnswer": "<sdp-answer>"
+        })
+
+        self.loop.run_until_complete(self.gecko.send(answer))
+
+        # 4. Client receive an error
+        # 6. Check that client received the anwser
+        client_received = self.loop.run_until_complete(self.client.recv())
+        data = json.loads(client_received)
+
+        self.assertDictEqual(data, {
+            "messageType": "progress",
+            "status": "terminated",
+            "reason": "Wrong message from Gecko: %s" % answer,
+            "workerId": worker_id
+        })

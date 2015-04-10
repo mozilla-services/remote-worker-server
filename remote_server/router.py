@@ -7,7 +7,7 @@ from remote_server.authentication import authenticate
 from remote_server.error import error
 from remote_server.exceptions import NotAuthenticatedError
 
-CLIENT_TIMEOUT_SECONDS = 3
+CLIENT_TIMEOUT_SECONDS = 10
 
 
 class Router(object):
@@ -116,7 +116,7 @@ class ClientRouter(Router):
             answer = raw_message
         else:
             yield from self.error('Wrong message from Gecko: %s'
-                                  % raw_message)
+                                  % raw_message, worker_id=worker_id)
             end = False
 
         if self.websocket.open and answer:

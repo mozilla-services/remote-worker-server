@@ -10,4 +10,4 @@ def build_message(message_type, status, reason, worker_id=None, **kwargs):
 
 
 def error(message, worker_id=None):
-    return build_message("progress", "terminated", message)
+    return build_message("progress", "terminated", message, worker_id)
