@@ -107,7 +107,6 @@ class ClientServerTestCase(ClientServerTests):
     def test_when_client_sends_ice_candidate_before_answer_gecko_gets_it(self):
         self.start_client()
         # 1. Client send the offer
-        print("$$$$ HELLO")
         self.loop.run_until_complete(self.client.send(self.client_hello))
 
         # 2. Gecko receive the offer
@@ -115,13 +114,38 @@ class ClientServerTestCase(ClientServerTests):
         data = json.loads(gecko_received)
 
         # 3. Client sends ICE Candidates
-        print("$$$$ ICE")
         self.loop.run_until_complete(self.client.send(self.client_ice))
 
         # 4. Gecko receive the ICE standza
-        print("#### Receiving message")
         gecko_received = self.loop.run_until_complete(self.gecko.recv())
-        print("#### Message received")
+        data = json.loads(gecko_received)
+
+        answer = json.loads(self.client_ice)
+        answer['workerId'] = data['workerId']
+        self.assertDictEqual(data, answer)
+
+    def test_when_client_sends_ice_candidate_after_answer_gecko_gets_it(self):
+        self.start_client()
+        # 1. Client send the offer
+        self.loop.run_until_complete(self.client.send(self.client_hello))
+
+        # 2. Gecko receive the offer
+        gecko_received = self.loop.run_until_complete(self.gecko.recv())
+        data = json.loads(gecko_received)
+
+        # 3. Gecko send back the answer
+        worker_id = data["workerId"]
+        self.loop.run_until_complete(self.gecko.send(json.dumps({
+            "messageType": "worker-created",
+            "workerId": worker_id,
+            "webrtcAnswer": "<sdp-answer>"
+        })))
+
+        # 3. Client sends ICE Candidates
+        self.loop.run_until_complete(self.client.send(self.client_ice))
+
+        # 4. Gecko receive the ICE standza
+        gecko_received = self.loop.run_until_complete(self.gecko.recv())
         data = json.loads(gecko_received)
 
         answer = json.loads(self.client_ice)
