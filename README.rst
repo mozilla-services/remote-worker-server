@@ -1,9 +1,6 @@
 Remote Worker Server
 ====================
 
-Remote server is the HTTP layer that let you create a remote Gecko
-Worker and talk with it through a websocket.
-
 |travis| |readthedocs|
 
 .. |travis| image:: https://travis-ci.org/mozilla-services/remote-worker-server.svg?branch=master
@@ -13,81 +10,11 @@ Worker and talk with it through a websocket.
     :target: http://remote-worker-server.readthedocs.org/en/latest/
     :alt: Documentation Status
 
-API
-===
 
-* `API Design proposal
-  <https://github.com/mozilla-services/remote-worker-server/wiki/WebRTC-API-Design-Proposal>`_
+Remote Worker Server is the service that handle the signaling for the
+Firefox Remote Worker WebRTC data channel setup.
+
+* `Initial Protocol Spec <https://github.com/mozilla-services/remote-worker-server/wiki/WebRTC-API-Design-Proposal>`_
 * `Online documentation <http://remote-worker-server.readthedocs.org/en/latest/>`_
-
-
-Run locally
-===========
-
-By default, remote-worker-server persists its records inside a `Redis
-<http://redis.io/>`_  database, so it has to be installed first (see the
-"Install Redis" section below for more on this).
-
-You will also need to have a Python 3.4 running.
-
-
-The server
-----------
-
-::
-
-    make serve
-
-
-Add a fake worker
------------------
-
-::
-
-    make mock_worker
-
-Connect a fake client
----------------------
-
-::
-
-    make mock_client
-
-
-Install Redis
-=============
-
-Linux
------
-
-On debian / ubuntu based systems::
-
-    apt-get install redis-server
-
-
-or::
-
-    yum install redis
-
-
-OS X
-----
-
-Assuming `brew <http://brew.sh/>`_ is installed, Redis installation becomes:
-
-::
-
-    brew install redis
-
-
-To restart it (Bug after configuration update)::
-
-    brew services restart redis
-
-
-Run tests
-=========
-
-::
-
-    make tests
+* `Issue tracker <https://github.com/mozilla-services/remote-worker-server/issues>`_
+* `Contributing <http://remote-worker-server.readthedocs.org/en/latest/contributing.html>`_
