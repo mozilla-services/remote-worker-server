@@ -33,10 +33,10 @@ Obtain the token
 
 XXX: Endpoint still to be done.
 
-The ``GET /v1/fxa-oauth/params`` endpoint can be use to get the
+The ``GET /v1/fxa-oauth/params`` endpoint can be used to get the
 configuration in order to trade the Firefox Account BrowserID with a
 Bearer Token. `See Firefox Account documentation about this behavior
-<https://developer.mozilla.org/en-US/Firefox_Accounts#Firefox_Accounts_BrowserID_API>`_
+<https://developer.mozilla.org/en-US/Firefox_Accounts#Firefox_Accounts_BrowserID_API>`_.
 
 .. code-block:: http
 
