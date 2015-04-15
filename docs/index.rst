@@ -11,6 +11,7 @@ Table of content
    quickstart
    api/index
    errors
+   glossary
    contributing
    changelog
    contributors
