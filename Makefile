@@ -43,6 +43,7 @@ tests: install-dev
 
 clean:
 	find . -name '__pycache__' -type d -exec rm -fr {} \;
+	rm -rf $(VENV)
 
 loadtest-check: install
 	$(VENV)/bin/pserve loadtests/server.ini > remote_server.log & PID=$$! && \
