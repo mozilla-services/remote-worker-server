@@ -20,7 +20,7 @@ ENTRY_POINTS = {
 
 
 setup(name='remote-worker',
-      version='0.1.dev0',
+      version='0.1.0',
       description='Gecko Cloud Remote Worker',
       long_description=README,
       classifiers=[
