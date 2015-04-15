@@ -11,10 +11,9 @@ Remote Worker Server
     :alt: Documentation Status
 
 
-Remote Worker Server is the service that handle the signaling for the
+Remote Worker Server is a service that handles signaling for the
 Firefox Remote Worker WebRTC data channel setup.
 
-* `Initial Protocol Spec <https://github.com/mozilla-services/remote-worker-server/wiki/WebRTC-API-Design-Proposal>`_
 * `Online documentation <http://remote-worker-server.readthedocs.org/en/latest/>`_
 * `Issue tracker <https://github.com/mozilla-services/remote-worker-server/issues>`_
 * `Contributing <http://remote-worker-server.readthedocs.org/en/latest/contributing.html>`_

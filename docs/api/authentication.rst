@@ -4,7 +4,7 @@ Authentication
 
 .. _authentication:
 
-We propose a setup using :term:`Firefox Accounts`, that verifies
+The authentication is using :term:`Firefox Accounts`, to verify
 the *OAuth2 bearer tokens* on a remote server
 
 

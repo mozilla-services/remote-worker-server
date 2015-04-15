@@ -19,7 +19,7 @@ Clients connects the websocket directly on ``/``
 Creating a new worker
 =====================
 
-In order to ask for a worker creation client need to send this first standza:
+In order to ask for a worker creation, the client need to send this first message:
 
 .. code-block:: json
     
@@ -79,7 +79,7 @@ Receiving errors
 ================
 
 In case the gecko is not available or was not able to start the
-worker, you will receive an error.
+worker, an error will be returned.
 
 .. code-block:: json
 
@@ -94,7 +94,7 @@ worker, you will receive an error.
 Receiving WebRTC Answer
 =======================
 
-If everything worked, you should receive the Gecko Answer.
+If everything worked, the gecko answer will be sent back:
 
 .. code-block:: json
 
