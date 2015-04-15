@@ -3,7 +3,7 @@ CHANGELOG
 
 This document describes changes between each past release.
 
-0.1.0 (2015-04-13)
+0.1.0 (2015-04-15)
 ------------------
 
 - Add handler for Gecko Headless websockets.
