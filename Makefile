@@ -39,6 +39,7 @@ tests-once: install-dev
 	$(VENV)/bin/flake8 remote_server
 
 tests: install-dev
+	@rm -fr .coverage
 	$(VENV)/bin/tox
 
 clean:
