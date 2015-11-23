@@ -133,7 +133,7 @@ class Redis(CacheBase):
                 redis._conn._do_close(None)
                 raise
             else:
-                return result[1].decode('utf-8')
+                return result[1]
 
     @asyncio.coroutine
     @wrap_redis_error
