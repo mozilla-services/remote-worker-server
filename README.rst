@@ -7,13 +7,13 @@ Remote Worker Server
     :target: https://travis-ci.org/mozilla-services/remote-worker-server
 
 .. |readthedocs| image:: https://readthedocs.org/projects/remote-worker-server/badge/?version=latest
-    :target: http://remote-worker-server.readthedocs.org/en/latest/
+    :target: https://remote-worker-server.readthedocs.io/en/latest/
     :alt: Documentation Status
 
 
 Remote Worker Server is a service that handles signaling for the
 Firefox Remote Worker WebRTC data channel setup.
 
-* `Online documentation <http://remote-worker-server.readthedocs.org/en/latest/>`_
+* `Online documentation <https://remote-worker-server.readthedocs.io/en/latest/>`_
 * `Issue tracker <https://github.com/mozilla-services/remote-worker-server/issues>`_
-* `Contributing <http://remote-worker-server.readthedocs.org/en/latest/contributing.html>`_
+* `Contributing <https://remote-worker-server.readthedocs.io/en/latest/contributing.html>`_
